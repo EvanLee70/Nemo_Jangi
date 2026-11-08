@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 from app.game_service import LearningGame
 
 ROOT = Path(__file__).resolve().parent.parent
-STATIC_DIR = ROOT / "static"
+STATIC_DIR = ROOT / "public"
 
 
 class LearningRequestHandler(BaseHTTPRequestHandler):
