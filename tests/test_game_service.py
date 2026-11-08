@@ -64,6 +64,7 @@ class LearningGameTest(unittest.TestCase):
 
         self.assertIn("board-lines", script)
         self.assertIn("move-guides", script)
+        self.assertIn("computer-move-guide", script)
         self.assertIn(".piece-image", stylesheet)
 
     def test_server_serves_the_attributed_janggi_piece_asset(self):

@@ -53,6 +53,16 @@ function showMoveGuides(origin) {
   overlay.append(guides);
 }
 
+function showComputerMoveTrail() {
+  const move = [...state.moveHistory].reverse().find(entry => !entry.pass && entry.side !== state.humanSide);
+  if (!move) return;
+  const trail = svgElement('g', { class: 'computer-move-guide' });
+  trail.append(svgElement('line', { x1: move.from[1] + 0.5, y1: move.from[0] + 0.5, x2: move.to[1] + 0.5, y2: move.to[0] + 0.5 }));
+  trail.append(svgElement('circle', { cx: move.from[1] + 0.5, cy: move.from[0] + 0.5, r: '.13' }));
+  trail.append(svgElement('circle', { cx: move.to[1] + 0.5, cy: move.to[0] + 0.5, r: '.19' }));
+  boardElement.querySelector('.board-lines').append(trail);
+}
+
 function render(nextState) {
   state = nextState;
   selected = null;
@@ -75,6 +85,7 @@ function render(nextState) {
     square.addEventListener('click', () => chooseSquare([rowIndex, columnIndex], legal));
     boardElement.append(square);
   }));
+  showComputerMoveTrail();
   const isHumanTurn = state.turn === state.humanSide && !state.gameOver;
   statusElement.textContent = state.gameOver ? '대국이 끝났습니다.' : state.inCheck ? '장군입니다. 궁을 지키는 수를 두어야 합니다.' : isHumanTurn ? '내 말을 선택하면 이동 경로가 투명선으로 표시됩니다.' : '컴퓨터가 생각하고 있습니다.';
   passButton.disabled = !state.canPass;
