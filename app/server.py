@@ -32,10 +32,16 @@ class LearningRequestHandler(BaseHTTPRequestHandler):
         try:
             payload = self._read_json()
             if path == "/api/new":
-                self.game = LearningGame(level=payload.get("level", 1), human_side=payload.get("humanSide", "cho"))
+                self.game = LearningGame(
+                    level=payload.get("level", 1),
+                    human_side=payload.get("humanSide", "cho"),
+                    engine_mode=payload.get("engineMode", "builtin"),
+                )
                 self._send_json(HTTPStatus.OK, self.game.state())
             elif path == "/api/move":
                 self._send_json(HTTPStatus.OK, self.game.play_human_move(payload["from"], payload["to"]))
+            elif path == "/api/computer-move":
+                self._send_json(HTTPStatus.OK, self.game.play_computer_move(payload["from"], payload["to"]))
             elif path == "/api/pass":
                 self._send_json(HTTPStatus.OK, self.game.pass_turn())
             else:
@@ -56,6 +62,7 @@ class LearningRequestHandler(BaseHTTPRequestHandler):
         body = target.read_bytes()
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", f"{content_type}; charset=utf-8")
+        self._send_isolation_headers()
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -64,9 +71,14 @@ class LearningRequestHandler(BaseHTTPRequestHandler):
         encoded = json.dumps(body, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
+        self._send_isolation_headers()
         self.send_header("Content-Length", str(len(encoded)))
         self.end_headers()
         self.wfile.write(encoded)
+
+    def _send_isolation_headers(self) -> None:
+        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+        self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
 
     def log_message(self, _format: str, *_args: object) -> None:
         return

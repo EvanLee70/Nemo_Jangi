@@ -20,14 +20,12 @@ python -m app.server
 
 - 초/한 진영 선택 및 컴퓨터 선공 지원
 - 1~5단계 컴퓨터 난이도
-  - 1: 다양한 합법 수 경험
-  - 2: 기물 이득 우선
-  - 3: 상대의 다음 수 고려
-  - 4: 두 수 읽기
-  - 5: 세 수 읽기
+  - 브라우저에서 동작하는 Fairy-Stockfish 장기 엔진의 생각 시간을 0.04초~2.2초로 조절
+  - 기본 엔진 파일을 불러올 수 없는 환경에서는 기존 학습용 탐색 엔진으로 자동 전환
 - 내 차례마다 합법 수 중 최대 5개를 추천하고, 기물 포획·중앙 점유·전개 관점의 이유 표시
 - 클릭으로 직접 수를 두거나 추천 수를 클릭해 진행
 - 선택한 말의 합법 이동 경로를 반투명선으로 표시
+- 컴퓨터가 둔 직전 수를 빨간 반투명선으로 표시
 - 장군 상태에서는 궁을 지키는 수만 허용하고, 둘 수 있는 합법 수가 없을 때만 한 수 쉼 허용
 
 ## 적용 규칙
@@ -49,4 +47,8 @@ python -m unittest discover -s tests -v
 
 ## 기반 규칙 엔진
 
-규칙 엔진은 MIT 라이선스의 [PyJanggi](https://github.com/sungho-cho/pyjanggi)를 기반으로 하며, 상세 고지는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)를 확인하세요.
+규칙 엔진은 MIT 라이선스의 [PyJanggi](https://github.com/sungho-cho/pyjanggi)를 기반으로 합니다. 컴퓨터 수 계산은 GPL-3.0-or-later의 [Fairy-Stockfish](https://github.com/fairy-stockfish/Fairy-Stockfish) WebAssembly 엔진을 사용합니다. 상세 고지는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)를 확인하세요.
+
+## 라이선스
+
+이 프로젝트는 Fairy-Stockfish 엔진을 브라우저 클라이언트에 배포하므로 GPL-3.0-or-later로 제공됩니다. 전체 GPL 전문은 [LICENSE](LICENSE), 엔진 배포본의 원문은 [public/engine/COPYING.txt](public/engine/COPYING.txt)에 있습니다.

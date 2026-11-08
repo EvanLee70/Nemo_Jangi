@@ -31,6 +31,20 @@ class LearningGameTest(unittest.TestCase):
         self.assertEqual(state["turn"], "cho")
         self.assertEqual(len(state["recommendations"]), 5)
 
+    def test_external_engine_mode_waits_for_and_validates_its_computer_move(self):
+        game = LearningGame(level=5, human_side="cho", engine_mode="fairy-stockfish")
+        human_move = game.state()["recommendations"][0]
+
+        awaiting_engine = game.play_human_move(human_move["from"], human_move["to"])
+
+        self.assertEqual(awaiting_engine["engineMode"], "fairy-stockfish")
+        self.assertEqual(awaiting_engine["turn"], "han")
+        self.assertEqual(len(awaiting_engine["moveHistory"]), 1)
+        engine_move = awaiting_engine["legalMoves"][0]
+        completed = game.play_computer_move(engine_move["from"], engine_move["to"])
+        self.assertEqual(completed["turn"], "cho")
+        self.assertEqual(len(completed["moveHistory"]), 2)
+
     def test_level_must_be_between_one_and_five(self):
         for invalid_level in (0, 6):
             with self.assertRaises(ValueError):
@@ -79,6 +93,20 @@ class LearningGameTest(unittest.TestCase):
 
         self.assertEqual(response.status, 200)
         self.assertIn("image/svg+xml", response.getheader("Content-Type"))
+
+    def test_server_serves_the_fairy_stockfish_engine_with_required_isolation_headers(self):
+        server = create_server("127.0.0.1", 0)
+        thread = Thread(target=server.serve_forever)
+        thread.start()
+        self.addCleanup(self._stop_server, server, thread)
+
+        connection = HTTPConnection("127.0.0.1", server.server_port)
+        connection.request("GET", "/engine/stockfish.js")
+        response = connection.getresponse()
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.getheader("Cross-Origin-Opener-Policy"), "same-origin")
+        self.assertEqual(response.getheader("Cross-Origin-Embedder-Policy"), "require-corp")
 
     def test_learning_screen_discloses_association_rule_sources(self):
         server = create_server("127.0.0.1", 0)

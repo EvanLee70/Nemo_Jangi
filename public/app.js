@@ -5,8 +5,12 @@ const historyElement = document.querySelector('#history');
 const passButton = document.querySelector('#pass-turn');
 const svgNamespace = 'http://www.w3.org/2000/svg';
 const pieceAssetNames = { 장: 'king', 사: 'advisor', 마: 'horse', 상: 'elephant', 차: 'chariot', 포: 'cannon', 졸: 'pawn' };
+const enginePieceNames = { 장: 'k', 사: 'a', 마: 'n', 상: 'b', 차: 'r', 포: 'c', 졸: 'p' };
+const engineTimes = [40, 120, 350, 900, 2200];
 let state;
 let selected = null;
+let engineAvailable = false;
+let engineMessage = '고성능 장기 엔진을 준비 중입니다.';
 
 async function request(path, options = {}) {
   const response = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...options });
@@ -17,6 +21,64 @@ async function request(path, options = {}) {
 
 function key(square) { return square.join(','); }
 function moveKey(from, to) { return `${key(from)}>${key(to)}`; }
+
+function stateToEngineFen(gameState) {
+  const ranks = gameState.board.map(row => {
+    let empty = 0;
+    let rank = '';
+    row.forEach(piece => {
+      if (!piece) { empty += 1; return; }
+      if (empty) { rank += empty; empty = 0; }
+      const symbol = enginePieceNames[piece.type];
+      rank += piece.side === 'cho' ? symbol.toUpperCase() : symbol;
+    });
+    return `${rank}${empty || ''}`;
+  });
+  return `${ranks.join('/')} ${gameState.turn === 'cho' ? 'w' : 'b'} - - 0 1`;
+}
+
+function uciToSquares(move) {
+  const parts = /^([a-i])(10|[1-9])([a-i])(10|[1-9])$/.exec(move);
+  if (!parts) throw new Error('엔진이 해석할 수 없는 수를 보냈습니다.');
+  const square = (file, rank) => [10 - Number(rank), file.charCodeAt(0) - 97];
+  return [square(parts[1], parts[2]), square(parts[3], parts[4])];
+}
+
+async function maybePlayEngineMove() {
+  if (!engineAvailable || state.engineMode !== 'fairy-stockfish' || state.turn === state.humanSide || state.gameOver) return;
+  statusElement.textContent = 'Fairy-Stockfish가 최선의 수를 계산하고 있습니다.';
+  try {
+    const bestMove = await janggiEngine.chooseMove(stateToEngineFen(state), engineTimes[state.level - 1]);
+    const [from, to] = uciToSquares(bestMove);
+    render(await request('/api/computer-move', { method: 'POST', body: JSON.stringify({ from, to }) }));
+  } catch (error) {
+    engineMessage = `엔진 오류: ${error.message}`;
+    statusElement.textContent = engineMessage;
+  }
+}
+
+async function startGame() {
+  render(await request('/api/new', {
+    method: 'POST',
+    body: JSON.stringify({
+      level: Number(document.querySelector('#level').value),
+      humanSide: document.querySelector('#side').value,
+      engineMode: engineAvailable ? 'fairy-stockfish' : 'builtin',
+    }),
+  }));
+}
+
+async function prepareEngine() {
+  try {
+    await janggiEngine.init();
+    engineAvailable = true;
+    engineMessage = 'Fairy-Stockfish 엔진으로 대국합니다.';
+    await startGame();
+  } catch (error) {
+    engineMessage = `기본 엔진으로 대국합니다: ${error.message}`;
+    statusElement.textContent = engineMessage;
+  }
+}
 
 function svgElement(name, attributes = {}) {
   const element = document.createElementNS(svgNamespace, name);
@@ -87,7 +149,8 @@ function render(nextState) {
   }));
   showComputerMoveTrail();
   const isHumanTurn = state.turn === state.humanSide && !state.gameOver;
-  statusElement.textContent = state.gameOver ? '대국이 끝났습니다.' : state.inCheck ? '장군입니다. 궁을 지키는 수를 두어야 합니다.' : isHumanTurn ? '내 말을 선택하면 이동 경로가 투명선으로 표시됩니다.' : '컴퓨터가 생각하고 있습니다.';
+  const status = state.gameOver ? '대국이 끝났습니다.' : state.inCheck ? '장군입니다. 궁을 지키는 수를 두어야 합니다.' : isHumanTurn ? '내 말을 선택하면 이동 경로가 투명선으로 표시됩니다.' : '컴퓨터가 생각하고 있습니다.';
+  statusElement.textContent = `${status} ${engineMessage}`;
   passButton.disabled = !state.canPass;
   document.querySelector('#cho-score').textContent = state.scores.cho;
   document.querySelector('#han-score').textContent = state.scores.han;
@@ -103,6 +166,7 @@ function render(nextState) {
     item.textContent = move.pass ? `${move.side === 'cho' ? '초' : '한'} 한 수 쉼` : `${move.side === 'cho' ? '초' : '한'} ${move.from[0] + 1}${move.from[1] + 1} → ${move.to[0] + 1}${move.to[1] + 1}`;
     return item;
   }));
+  void maybePlayEngineMove();
 }
 
 function chooseSquare(square, legal) {
@@ -125,12 +189,11 @@ async function play(from, to) {
 }
 
 document.querySelector('#new-game').addEventListener('click', async () => {
-  try {
-    render(await request('/api/new', { method: 'POST', body: JSON.stringify({ level: Number(document.querySelector('#level').value), humanSide: document.querySelector('#side').value }) }));
-  } catch (error) { statusElement.textContent = error.message; }
+  try { await startGame(); }
+  catch (error) { statusElement.textContent = error.message; }
 });
 passButton.addEventListener('click', async () => {
   try { render(await request('/api/pass', { method: 'POST', body: '{}' })); }
   catch (error) { statusElement.textContent = error.message; }
 });
-request('/api/state').then(render).catch(error => { statusElement.textContent = error.message; });
+request('/api/state').then(render).then(prepareEngine).catch(error => { statusElement.textContent = error.message; });

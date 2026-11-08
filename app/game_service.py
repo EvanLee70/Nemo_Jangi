@@ -36,13 +36,16 @@ class Candidate:
 class LearningGame:
     """A single learner-versus-computer game with move recommendations."""
 
-    def __init__(self, level: int, human_side: str) -> None:
+    def __init__(self, level: int, human_side: str, engine_mode: str = "builtin") -> None:
         if level not in range(1, 6):
             raise ValueError("난이도는 1부터 5까지 선택할 수 있습니다.")
         if human_side not in ("cho", "han"):
             raise ValueError("사용자 진영은 cho 또는 han이어야 합니다.")
+        if engine_mode not in ("builtin", "fairy-stockfish"):
+            raise ValueError("지원하지 않는 컴퓨터 엔진입니다.")
 
         self.level = level
+        self.engine_mode = engine_mode
         self.human_side = Camp.CHO if human_side == "cho" else Camp.HAN
         self.computer_side = self.human_side.opponent
         self.game = JanggiGame(
@@ -52,7 +55,7 @@ class LearningGame:
         )
         self.history: list[dict[str, Any]] = []
         self.game_over = False
-        if self.game.turn == self.computer_side:
+        if self.game.turn == self.computer_side and self.engine_mode == "builtin":
             self._play_computer_move()
 
     def state(self) -> dict[str, Any]:
@@ -62,6 +65,7 @@ class LearningGame:
         recommendations = self._recommendations() if self.game.turn == self.human_side and not self.game_over else []
         return {
             "level": self.level,
+            "engineMode": self.engine_mode,
             "humanSide": SIDE_NAMES[self.human_side],
             "turn": SIDE_NAMES[self.game.turn],
             "gameOver": self.game_over,
@@ -83,8 +87,18 @@ class LearningGame:
         if (source, target) not in self._rules(self.game).legal_actions(self.game.turn):
             raise ValueError("규칙에 맞지 않는 수입니다.")
         self._play(source, target, self.human_side)
-        if not self.game_over:
+        if not self.game_over and self.engine_mode == "builtin":
             self._play_computer_move()
+        return self.state()
+
+    def play_computer_move(self, origin: list[int], destination: list[int]) -> dict[str, Any]:
+        if self.game_over or self.game.turn != self.computer_side:
+            raise ValueError("현재는 컴퓨터가 둘 차례가 아닙니다.")
+        source = self._location(origin)
+        target = self._location(destination)
+        if (source, target) not in self._rules(self.game).legal_actions(self.game.turn):
+            raise ValueError("엔진이 규칙에 맞지 않는 수를 보냈습니다.")
+        self._play(source, target, self.computer_side)
         return self.state()
 
     def pass_turn(self) -> dict[str, Any]:
@@ -95,7 +109,8 @@ class LearningGame:
             raise ValueError("둘 수 있는 수가 있거나 장군 상태에서는 한 수 쉴 수 없습니다.")
         self.history.append({"side": SIDE_NAMES[self.human_side], "pass": True})
         self.game.turn = self.game.turn.opponent
-        self._play_computer_move()
+        if self.engine_mode == "builtin":
+            self._play_computer_move()
         return self.state()
 
     def _location(self, raw: list[int]) -> Location:

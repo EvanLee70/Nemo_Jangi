@@ -30,11 +30,17 @@ class handler(BaseHTTPRequestHandler):
             session_id, game, created = self._game()
             endpoint = self._endpoint()
             if endpoint == "/new":
-                game = LearningGame(level=payload.get("level", 1), human_side=payload.get("humanSide", "cho"))
+                game = LearningGame(
+                    level=payload.get("level", 1),
+                    human_side=payload.get("humanSide", "cho"),
+                    engine_mode=payload.get("engineMode", "builtin"),
+                )
                 GAMES[session_id] = game
                 body = game.state()
             elif endpoint == "/move":
                 body = game.play_human_move(payload["from"], payload["to"])
+            elif endpoint == "/computer-move":
+                body = game.play_computer_move(payload["from"], payload["to"])
             elif endpoint == "/pass":
                 body = game.pass_turn()
             else:
@@ -72,6 +78,8 @@ class handler(BaseHTTPRequestHandler):
         encoded = json.dumps(body, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+        self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
         self.send_header("Content-Length", str(len(encoded)))
         if session_id:
             self.send_header("Set-Cookie", f"nemo_janggi_session={session_id}; Path=/; HttpOnly; SameSite=Lax")
