@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>장기 배움터</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">BEGINNER JANGGI LAB</p>
+      <h1>장기 배움터</h1>
+      <p class="subtitle">컴퓨터와 두며, 매 차례 추천 수를 비교해 보세요.</p>
+    </header>
+
+    <section class="setup" aria-label="대국 설정">
+      <label>컴퓨터 수준
+        <select id="level">
+          <option value="1">1급 · 한 수씩 익히기</option>
+          <option value="2">2급 · 기물 잡기</option>
+          <option value="3">3급 · 다음 수 보기</option>
+          <option value="4">4급 · 두 수 읽기</option>
+          <option value="5">5급 · 세 수 읽기</option>
+        </select>
+      </label>
+      <label>내 진영
+        <select id="side"><option value="cho">초</option><option value="han">한</option></select>
+      </label>
+      <button id="new-game">새 대국</button>
+    </section>
+
+    <section class="game-layout">
+      <div class="board-wrap">
+        <div class="status" id="status">대국을 준비 중입니다.</div>
+        <div class="board" id="board" role="grid" aria-label="장기판"></div>
+        <div class="board-actions">
+          <p class="hint">내 기물을 먼저 누른 뒤 이동할 칸을 누르세요.</p>
+          <button id="pass-turn" type="button" disabled>한 수 쉼</button>
+        </div>
+      </div>
+      <aside>
+        <section class="panel">
+          <p class="panel-kicker">LEARN</p>
+          <h2>추천 수 <span id="recommendation-count"></span></h2>
+          <p class="panel-copy">추천은 정답이 아닙니다. 이유를 보고 직접 비교해 보세요.</p>
+          <ol id="recommendations"></ol>
+        </section>
+        <section class="panel score-panel">
+          <h2>기물 점수</h2>
+          <div><span>초</span><strong id="cho-score">0</strong></div>
+          <div><span>한</span><strong id="han-score">0</strong></div>
+        </section>
+        <section class="panel history-panel">
+          <h2>수순</h2>
+          <ol id="history"></ol>
+        </section>
+        <section class="panel rule-panel">
+          <h2>대한장기협회 기준</h2>
+          <p>친선대국 모드입니다. 행마·장군·일수불퇴를 적용하며 빅장과 반복수는 허용합니다.</p>
+          <ul>
+            <li><a href="http://www.kja.or.kr/business/business3.php" target="_blank" rel="noreferrer">기물 행마법</a></li>
+            <li><a href="http://www.kja.or.kr/business/business5.php" target="_blank" rel="noreferrer">대국 규칙</a></li>
+            <li><a href="http://www.kja.or.kr/business/business6.php" target="_blank" rel="noreferrer">대국 규정</a></li>
+            <li><a href="http://www.kja.or.kr/business/business7.php" target="_blank" rel="noreferrer">장기 용어</a></li>
+          </ul>
+        </section>
+      </aside>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
