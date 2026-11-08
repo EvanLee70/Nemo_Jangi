@@ -7,6 +7,7 @@ import secrets
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 from app.game_service import LearningGame
 
@@ -17,7 +18,7 @@ class handler(BaseHTTPRequestHandler):
     """Serve a browser session from a Vercel Python function instance."""
 
     def do_GET(self) -> None:
-        if self.path.rstrip("/") != "/api/state":
+        if self._endpoint() != "/state":
             self._send_json(HTTPStatus.NOT_FOUND, {"error": "요청한 기능을 찾을 수 없습니다."})
             return
         session_id, game, created = self._game()
@@ -27,14 +28,14 @@ class handler(BaseHTTPRequestHandler):
         try:
             payload = self._read_json()
             session_id, game, created = self._game()
-            endpoint = self.path.rstrip("/")
-            if endpoint == "/api/new":
+            endpoint = self._endpoint()
+            if endpoint == "/new":
                 game = LearningGame(level=payload.get("level", 1), human_side=payload.get("humanSide", "cho"))
                 GAMES[session_id] = game
                 body = game.state()
-            elif endpoint == "/api/move":
+            elif endpoint == "/move":
                 body = game.play_human_move(payload["from"], payload["to"])
-            elif endpoint == "/api/pass":
+            elif endpoint == "/pass":
                 body = game.pass_turn()
             else:
                 self._send_json(HTTPStatus.NOT_FOUND, {"error": "요청한 기능을 찾을 수 없습니다."}, session_id if created else None)
@@ -62,6 +63,10 @@ class handler(BaseHTTPRequestHandler):
     def _read_json(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0"))
         return json.loads(self.rfile.read(length).decode("utf-8"))
+
+    def _endpoint(self) -> str:
+        route = parse_qs(urlparse(self.path).query).get("route", [""])[0]
+        return f"/{route.strip('/')}"
 
     def _send_json(self, status: HTTPStatus, body: dict[str, Any], session_id: str | None = None) -> None:
         encoded = json.dumps(body, ensure_ascii=False).encode("utf-8")
