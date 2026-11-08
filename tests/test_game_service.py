@@ -64,7 +64,20 @@ class LearningGameTest(unittest.TestCase):
 
         self.assertIn("board-lines", script)
         self.assertIn("move-guides", script)
-        self.assertIn("pieces.svg", stylesheet)
+        self.assertIn(".piece-image", stylesheet)
+
+    def test_server_serves_the_attributed_janggi_piece_asset(self):
+        server = create_server("127.0.0.1", 0)
+        thread = Thread(target=server.serve_forever)
+        thread.start()
+        self.addCleanup(self._stop_server, server, thread)
+
+        connection = HTTPConnection("127.0.0.1", server.server_port)
+        connection.request("GET", "/pieces/kakao-blue-king.svg")
+        response = connection.getresponse()
+
+        self.assertEqual(response.status, 200)
+        self.assertIn("image/svg+xml", response.getheader("Content-Type"))
 
     def test_learning_screen_discloses_association_rule_sources(self):
         server = create_server("127.0.0.1", 0)

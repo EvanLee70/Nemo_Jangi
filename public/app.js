@@ -4,6 +4,7 @@ const recommendationsElement = document.querySelector('#recommendations');
 const historyElement = document.querySelector('#history');
 const passButton = document.querySelector('#pass-turn');
 const svgNamespace = 'http://www.w3.org/2000/svg';
+const pieceAssetNames = { 장: 'king', 사: 'advisor', 마: 'horse', 상: 'elephant', 차: 'chariot', 포: 'cannon', 졸: 'pawn' };
 let state;
 let selected = null;
 
@@ -64,10 +65,10 @@ function render(nextState) {
     square.setAttribute('aria-label', piece ? `${piece.side} ${piece.type}` : '빈 칸');
     square.dataset.square = `${rowIndex},${columnIndex}`;
     if (piece) {
-      const pieceImage = document.createElement('span');
+      const pieceImage = document.createElement('img');
       pieceImage.className = 'piece-image';
-      pieceImage.textContent = piece.type;
-      pieceImage.setAttribute('aria-hidden', 'true');
+      pieceImage.src = `/pieces/kakao-${piece.side === 'cho' ? 'blue' : 'red'}-${pieceAssetNames[piece.type]}.svg`;
+      pieceImage.alt = `${piece.side === 'cho' ? '초' : '한'} ${piece.type}`;
       square.append(pieceImage);
     }
     if (origins.has(`${rowIndex},${columnIndex}`)) square.classList.add('can-move');
